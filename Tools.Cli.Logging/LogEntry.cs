@@ -2,7 +2,7 @@
 
 namespace Tools.Cli.Logging;
 
-public class LogEntry
+public record LogEntry
 {
     public LogLevel Level { get; set; }
     public required string Message { get; set; }

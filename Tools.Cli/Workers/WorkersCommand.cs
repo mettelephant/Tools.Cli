@@ -1,6 +1,4 @@
 ﻿using System.CommandLine;
-using Tools.Cli.LogAnalyzer.Analyzer;
-using Tools.Cli.LogAnalyzer.Report;
 using Tools.Cli.Workers.ChangeDetector;
 using Tools.Cli.Workers.ConfigAnalyzer;
 

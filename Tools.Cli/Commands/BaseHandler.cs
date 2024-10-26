@@ -1,5 +1,6 @@
 ﻿using Spectre.Console;
 using Tools.Cli.Logging;
+using Tools.Cli.Logging.File;
 using Tools.Core.Settings;
 
 namespace Tools.Cli.Commands;

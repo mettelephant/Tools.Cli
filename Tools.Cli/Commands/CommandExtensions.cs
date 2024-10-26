@@ -14,7 +14,7 @@ public static class CommandExtensions
         command.AddGlobalOption(logLevelOption);
         command.AddGlobalOption(logDirectoryOption);
         command.AddGlobalOption(enableConsoleLoggingOption);
-        
+
         return (logLevelOption, logDirectoryOption, enableConsoleLoggingOption);
     }
 }

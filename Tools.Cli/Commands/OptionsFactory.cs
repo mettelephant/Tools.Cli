@@ -36,7 +36,7 @@ public static class OptionsFactory
             Arity = ArgumentArity.ZeroOrOne,
         };
     }
-    
+
     public static Option<DirectoryInfo> CreateRequiredDirectoryOption(string[] aliases, string description)
     {
         var option = new Option<DirectoryInfo>(aliases, description)

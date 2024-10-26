@@ -14,4 +14,5 @@ public interface ILogger
     void StartTask(string taskName, double maxValue = 100);
     void ReportProgress(string taskName, double value);
     void CompleteTask(string taskName);
+    void LogSummary(SummaryEntry summary);
 }

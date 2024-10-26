@@ -55,4 +55,9 @@ public sealed class NullLogger : ILogger
     public void CompleteTask(string taskName)
     {
     }
+
+    public void LogSummary(SummaryEntry summary)
+    {
+
+    }
 }

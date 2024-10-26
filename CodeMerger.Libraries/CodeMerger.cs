@@ -18,6 +18,8 @@ public static class CodeMerger
         Logger.LogSummary($"Log Level: {settings.LogLevel}");
         Logger.LogSummary($"Log Directory: {settings.LogDirectory?.FullName ?? "Not specified"}");
         Thread.Sleep(1000);
+        
+        Logger.LogSummary("test-cust", 100, 3, 3, 50);
 
         for (int i = 0; i < 100; i++)
         {
@@ -25,8 +27,8 @@ public static class CodeMerger
             Thread.Sleep(100);
         }
         Logger.CompleteTask("Printing Summary");
-        
-        
+
+
         Logger.StartTask("Analyzing Logs");
         Thread.Sleep(1000);
 

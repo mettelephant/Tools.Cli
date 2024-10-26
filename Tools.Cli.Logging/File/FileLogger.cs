@@ -2,7 +2,7 @@
 using System.Text.Json;
 using Tools.Cli.Logging.Help;
 
-namespace Tools.Cli.Logging;
+namespace Tools.Cli.Logging.File;
 
 public class FileLogger : ILogger
 {
@@ -11,16 +11,21 @@ public class FileLogger : ILogger
         WriteIndented = false,
         DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull
     };
-    private readonly DirectoryInfo _logDirectory;
+
+    private readonly string _jsonLogPath;
+    private readonly string _csvLogPath;
+    private readonly string _summaryLogPath;
 
     public FileLogger(DirectoryInfo logDirectory)
     {
-        _logDirectory = logDirectory;
         // Ensure the directory exists
-        if (!_logDirectory.Exists)
+        if (!logDirectory.Exists)
         {
-            _logDirectory.Create();
+            logDirectory.Create();
         }
+        _jsonLogPath = Path.Combine(logDirectory.FullName, "log.json");
+        _csvLogPath = Path.Combine(logDirectory.FullName, "log.csv");
+        _summaryLogPath = Path.Combine(logDirectory.FullName, "summary.json");
     }
 
     public void LogDebug(string message, FileInfo? file = null, string? data = null, string? sourceExtension = null, string? destinationExtension = null, HelpExplanation? helpExplanation = null)
@@ -65,28 +70,47 @@ public class FileLogger : ILogger
 
     private void WriteLog(LogLevel level, string message, FileInfo? file = null, string? data = null, string? sourceExtension = null, string? destinationExtension = null, HelpExplanation? helpExplanation = null)
     {
-        var logData = new
+        var logData = new LogJsonEntry(DateTime.UtcNow.ToString("o", CultureInfo.InvariantCulture), level, message, file, data, sourceExtension, destinationExtension, helpExplanation);
+
+        // Serialize to JSON
+        var jsonLogEntry = JsonSerializer.Serialize(logData!, SourceGenerationContext.Default.LogJsonEntry);
+        //var jsonLogEntry = JsonSerializer.Serialize(logData, _jsonOptions);
+
+        // Write to JSON file
+        System.IO.File.AppendAllText(_jsonLogPath, jsonLogEntry + Environment.NewLine);
+
+        // Write to CSV file
+        var csvLine = $"{logData.Timestamp},{logData.Level},\"{logData.Message}\",\"{logData.File}\",\"{logData.Data}\",\"{logData.SourceExtension}\",\"{logData.DestinationExtension}\",\"{logData.HelpExplanation}\"";
+        System.IO.File.AppendAllText(_csvLogPath, $"{csvLine}{Environment.NewLine}");
+
+
+    }
+
+    public void LogSummary(SummaryEntry summary)
+    {
+        var summaryData = new
         {
             Timestamp = DateTime.UtcNow.ToString("o", CultureInfo.InvariantCulture),
-            Level = level,
-            Message = message,
-            File = file,
-            Data = data,
-            SourceExtension = sourceExtension,
-            DestinationExtension = destinationExtension,
-            HelpExplanation = helpExplanation
+            CustomerCode = summary.CustomerCode,
+            FilesProcessed = summary.FilesProcessed,
+            Errors = summary.Errors,
+            FilesWithErrors = summary.FilesWithErrors,
+            FilesMoved = summary.FilesMoved
         };
 
         // Serialize to JSON
-        var jsonLogEntry = JsonSerializer.Serialize(logData, _jsonOptions);
+        var jsonSummaryEntry = JsonSerializer.Serialize(summary!, SourceGenerationContext.Default.SummaryEntry);
+        //var jsonSummaryEntry = JsonSerializer.Serialize(summaryData, _jsonOptions);
 
-        // Write to JSON file
-        var jsonLogPath = Path.Combine(_logDirectory.FullName, "log.json");
-        File.AppendAllText(jsonLogPath, jsonLogEntry + Environment.NewLine);
+        // Write to summary JSON file
+        System.IO.File.WriteAllText(_summaryLogPath, jsonSummaryEntry);
+    }
+}
 
-        // Write to CSV file
-        var csvLogPath = Path.Combine(_logDirectory.FullName, "log.csv");
-        var csvLine = $"{logData.Timestamp},{logData.Level},\"{logData.Message}\",\"{logData.File}\",\"{logData.Data}\",\"{logData.SourceExtension}\",\"{logData.DestinationExtension}\",\"{logData.HelpExplanation}\"";
-        File.AppendAllText(csvLogPath, $"{csvLine}{Environment.NewLine}");
+public record LogJsonEntry(string Timestamp, LogLevel Level, string Message, FileInfo? File, string? Data, string? SourceExtension, string? DestinationExtension, HelpExplanation? HelpExplanation)
+{
+    public override string ToString()
+    {
+        return $"{{ Timestamp = {Timestamp}, Level = {Level}, Message = {Message}, File = {File}, Data = {Data}, SourceExtension = {SourceExtension}, DestinationExtension = {DestinationExtension}, HelpExplanation = {HelpExplanation} }}";
     }
 }

@@ -86,4 +86,12 @@ public class CompositeLogger(params ILogger[] loggers) : ILogger
             logger.CompleteTask(taskName);
         }
     }
+
+    public void LogSummary(SummaryEntry summary)
+    {
+        foreach (var logger in _loggers)
+        {
+            logger.LogSummary(summary);
+        }
+    }
 }

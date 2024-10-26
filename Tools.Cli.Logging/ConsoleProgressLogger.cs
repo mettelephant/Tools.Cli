@@ -7,17 +7,17 @@ namespace Tools.Cli.Logging;
 public class ConsoleProgressLogger(ProgressContext progressContext) : ILogger
 {
     private readonly ConcurrentDictionary<string, ProgressTask> _tasks = new();
-    
+
     public void LogDebug(string message, FileInfo? file = null, string? data = null, string? sourceExtension = null, string? destinationExtension = null, HelpExplanation? helpExplanation = null)
     {
         Log(LogLevel.Debug, message, file, data, sourceExtension, destinationExtension, helpExplanation);
     }
-    
+
     public void LogInformation(string message, FileInfo? file = null, string? data = null, string? sourceExtension = null, string? destinationExtension = null, HelpExplanation? helpExplanation = null)
     {
         Log(LogLevel.Information, message, file, data, sourceExtension, destinationExtension, helpExplanation);
     }
-    
+
     public void LogSummary(string message, FileInfo? file = null, string? data = null, string? sourceExtension = null, string? destinationExtension = null, HelpExplanation? helpExplanation = null)
     {
         Log(LogLevel.Summary, message, file, data, sourceExtension, destinationExtension, helpExplanation);
@@ -81,5 +81,29 @@ public class ConsoleProgressLogger(ProgressContext progressContext) : ILogger
         {
             task.Increment(task.MaxValue);
         }
+    }
+
+    public void LogSummary(SummaryEntry summary)
+    {
+        var table = new Table()
+            .Title("Summary")
+            .AddColumn("Customer Code")
+            .AddColumn("Files Processed")
+            .AddColumn("Errors")
+            .AddColumn("Files with Errors")
+            .AddColumn("Files Moved")
+            .AddRow(
+                summary.CustomerCode,
+                summary.FilesProcessed.ToString(),
+                summary.Errors.ToString(),
+                summary.FilesWithErrors.ToString(),
+                summary.FilesMoved.ToString());
+        AnsiConsole.Write(table);
+        /*AnsiConsole.WriteLine("Operation Complete - Summary");
+        AnsiConsole.MarkupLine($"[{Color.White}]Customer:[/][{Color.White} {summary.CustomerCode}[/]");
+        AnsiConsole.MarkupLine($"[{Color.White}]# Files Processed:[/][{Color.White} {summary.FilesProcessed}[/]");
+        AnsiConsole.MarkupLine($"[{Color.White}]# Files Moved:[/][{Color.White} {summary.FilesMoved}[/]");
+        AnsiConsole.MarkupLine($"[{Color.White}]# Files Errors:[/][{Color.White} {summary.FilesWithErrors}[/]");
+        AnsiConsole.MarkupLine($"[{Color.White}]# Errors:[/][{Color.White} {summary.Errors}[/]");*/
     }
 }

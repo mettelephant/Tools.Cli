@@ -1,6 +1,5 @@
 ﻿using System.CommandLine;
 using Tools.Cli.Commands;
-using Tools.Core.Settings;
 
 namespace Tools.Cli.Workers.ChangeDetector;
 

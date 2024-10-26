@@ -15,8 +15,8 @@ public static class LogAnalyzer
         Logger.LogSummary($"Log Separator: {settings.Separator}");
         Thread.Sleep(1000);
         Logger.CompleteTask("Printing Summary");
-        
-        
+
+
         Logger.StartTask("Analyzing Logs");
         Thread.Sleep(1000);
 
