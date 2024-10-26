@@ -1,0 +1,19 @@
+<Project>
+  <!-- See https://aka.ms/dotnet/msbuild/customize for more details on customizing your build -->
+  <PropertyGroup Label="Output">
+
+    <ArtifactsPath>$(MSBuildThisFileDirectory)artifacts</ArtifactsPath>
+
+  </PropertyGroup>
+
+  <PropertyGroup Label="Language">
+    <TargetFramework>net9.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+  
+  <PropertyGroup>
+    <AnalysisLevel>latest</AnalysisLevel>
+    <analysismode>Recommended</analysismode>
+  </PropertyGroup>
+</Project>

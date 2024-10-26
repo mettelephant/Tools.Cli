@@ -1,0 +1,10 @@
+<Solution>
+  <Folder Name="/Solution Items/">
+    <File Path="Directory.Build.props" />
+    <File Path=".gitignore" />
+  </Folder>
+  <Project Path="CodeMerger.Libraries\CodeMerger.Libraries.csproj" Type="C#" />
+  <Project Path="Tools.Cli.Logging\Tools.Cli.Logging.csproj" Type="C#" />
+  <Project Path="Tools.Cli\Tools.Cli.csproj" Type="C#" />
+  <Project Path="Tools.Core\Tools.Core.csproj" Type="C#" />
+</Solution>
