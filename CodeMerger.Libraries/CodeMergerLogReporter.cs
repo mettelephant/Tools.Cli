@@ -15,14 +15,14 @@ public static class CodeMergerLogReporter
         Console.WriteLine($"Log Level: {settings.LogLevel}");
         Console.WriteLine($"Reports Directory: {settings.ReportsDirectory}");
 
-        if(!settings.ReportsDirectory.Exists);
+        if(!settings.ReportsDirectory.Exists)
         {
             settings.ReportsDirectory.Create();
         }
         var reportFile = new FileInfo(Path.Combine(settings.ReportsDirectory.FullName, "log.html"));
         using var fs = File.Create(reportFile.FullName);
         fs.Close();
-        GenerateHtmlReport(settings.LogDirectory, new FileInfo(Path.Combine(settings.ReportsDirectory.FullName, "log.html")));
+        GenerateHtmlReport(settings.LogDirectory!, new FileInfo(Path.Combine(settings.ReportsDirectory.FullName, "log.html")));
     }
 
     private static void GenerateHtmlReport(DirectoryInfo logDirectory, FileInfo outputHtmlFile)
@@ -38,7 +38,6 @@ public static class CodeMergerLogReporter
         var logEntries = new List<LogJsonEntry>();
         foreach (var line in File.ReadLines(jsonLogPath))
         {
-            //var logData = JsonSerializer.Deserialize<LogEntry>(line);
             var logData = JsonSerializer.Deserialize<LogJsonEntry>(line, SourceGenerationContext.Default.LogJsonEntry);
             logEntries.Add(logData);
         }

@@ -6,12 +6,6 @@ namespace Tools.Cli.Logging.File;
 
 public class FileLogger : ILogger
 {
-    private readonly JsonSerializerOptions _jsonOptions = new()
-    {
-        WriteIndented = false,
-        DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull
-    };
-
     private readonly string _jsonLogPath;
     private readonly string _csvLogPath;
     private readonly string _summaryLogPath;
@@ -73,8 +67,7 @@ public class FileLogger : ILogger
         var logData = new LogJsonEntry(DateTime.UtcNow.ToString("o", CultureInfo.InvariantCulture), level, message, file, data, sourceExtension, destinationExtension, helpExplanation);
 
         // Serialize to JSON
-        var jsonLogEntry = JsonSerializer.Serialize(logData!, SourceGenerationContext.Default.LogJsonEntry);
-        //var jsonLogEntry = JsonSerializer.Serialize(logData, _jsonOptions);
+        var jsonLogEntry = JsonSerializer.Serialize(logData, SourceGenerationContext.Default.LogJsonEntry);
 
         // Write to JSON file
         System.IO.File.AppendAllText(_jsonLogPath, jsonLogEntry + Environment.NewLine);
@@ -82,25 +75,12 @@ public class FileLogger : ILogger
         // Write to CSV file
         var csvLine = $"{logData.Timestamp},{logData.Level},\"{logData.Message}\",\"{logData.File}\",\"{logData.Data}\",\"{logData.SourceExtension}\",\"{logData.DestinationExtension}\",\"{logData.HelpExplanation}\"";
         System.IO.File.AppendAllText(_csvLogPath, $"{csvLine}{Environment.NewLine}");
-
-
     }
 
     public void LogSummary(SummaryEntry summary)
     {
-        var summaryData = new
-        {
-            Timestamp = DateTime.UtcNow.ToString("o", CultureInfo.InvariantCulture),
-            CustomerCode = summary.CustomerCode,
-            FilesProcessed = summary.FilesProcessed,
-            Errors = summary.Errors,
-            FilesWithErrors = summary.FilesWithErrors,
-            FilesMoved = summary.FilesMoved
-        };
-
         // Serialize to JSON
-        var jsonSummaryEntry = JsonSerializer.Serialize(summary!, SourceGenerationContext.Default.SummaryEntry);
-        //var jsonSummaryEntry = JsonSerializer.Serialize(summaryData, _jsonOptions);
+        var jsonSummaryEntry = JsonSerializer.Serialize(summary, SourceGenerationContext.Default.SummaryEntry);
 
         // Write to summary JSON file
         System.IO.File.WriteAllText(_summaryLogPath, jsonSummaryEntry);

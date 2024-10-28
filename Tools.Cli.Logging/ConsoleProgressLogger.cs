@@ -99,11 +99,5 @@ public class ConsoleProgressLogger(ProgressContext progressContext) : ILogger
                 summary.FilesWithErrors.ToString(),
                 summary.FilesMoved.ToString());
         AnsiConsole.Write(table);
-        /*AnsiConsole.WriteLine("Operation Complete - Summary");
-        AnsiConsole.MarkupLine($"[{Color.White}]Customer:[/][{Color.White} {summary.CustomerCode}[/]");
-        AnsiConsole.MarkupLine($"[{Color.White}]# Files Processed:[/][{Color.White} {summary.FilesProcessed}[/]");
-        AnsiConsole.MarkupLine($"[{Color.White}]# Files Moved:[/][{Color.White} {summary.FilesMoved}[/]");
-        AnsiConsole.MarkupLine($"[{Color.White}]# Files Errors:[/][{Color.White} {summary.FilesWithErrors}[/]");
-        AnsiConsole.MarkupLine($"[{Color.White}]# Errors:[/][{Color.White} {summary.Errors}[/]");*/
     }
 }
