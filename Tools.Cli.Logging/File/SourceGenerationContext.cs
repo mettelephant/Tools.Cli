@@ -17,6 +17,4 @@ namespace Tools.Cli.Logging.File;
 [JsonSerializable(typeof(List<SummaryEntry>))]
 [JsonSerializable(typeof(List<Exception>))]
 [JsonSerializable(typeof(List<KeyValuePair<string, object>>))]
-public partial class SourceGenerationContext : JsonSerializerContext
-{
-}
+public partial class SourceGenerationContext : JsonSerializerContext;

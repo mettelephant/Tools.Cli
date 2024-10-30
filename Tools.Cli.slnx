@@ -4,6 +4,8 @@
     <File Path=".gitignore" />
   </Folder>
   <Project Path="CodeMerger.Libraries\CodeMerger.Libraries.csproj" Type="C#" />
+  <Project Path="CodeMerger.ReportGenerator\CodeMerger.ReportGenerator.csproj" Type="Classic C#" />
+  <Project Path="CodeMerger.SampleGenerator\CodeMerger.SampleGenerator.csproj" Type="Classic C#" />
   <Project Path="Tools.Cli.Logging\Tools.Cli.Logging.csproj" Type="C#" />
   <Project Path="Tools.Cli\Tools.Cli.csproj" Type="C#" />
   <Project Path="Tools.Core\Tools.Core.csproj" Type="C#" />
