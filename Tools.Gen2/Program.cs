@@ -38,113 +38,103 @@ public class LogReportGenerator
 {
     // Previous LogEntry sample data generation code remains the same...
 
-    private static string GetHtmlHeader()
-    {
-        return """
-               <!DOCTYPE html>
-               <html lang="en">
-               <head>
-                   <meta charset="UTF-8">
-                   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-                   <title>Log Report</title>
-                   <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.7.0/chart.min.js"></script>
-                   <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
-                   <style>
-                       .chart-container {
-                           position: relative;
-                           height: 300px;
-                           width: 100%;
-                           max-height: 300px;
-                       }
-                       .expandable-content {
-                           max-height: 300px;
-                           overflow-y: auto;
-                       }
-                   </style>
-               </head>
+    private static string GetHtmlHeader() =>
+        """
+        <!DOCTYPE html>
+        <html lang="en">
+        <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>Log Report</title>
+            <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.7.0/chart.min.js"></script>
+            <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+            <style>
+                .chart-container {
+                    position: relative;
+                    height: 300px;
+                    width: 100%;
+                    max-height: 300px;
+                }
+                .expandable-content {
+                    max-height: 300px;
+                    overflow-y: auto;
+                }
+            </style>
+        </head>
+        """;
+
+    private static string GenerateLogGroup(IGrouping<MessageLogCode, LogEntry> group) =>
+        $"""
+         <div class="border rounded-lg overflow-hidden">
+             <button
+                 onclick="toggleGroup('{group.Key}')"
+                 class="w-full px-4 py-2 bg-gray-50 hover:bg-gray-100 flex items-center justify-between">
+                 <div class="flex items-center">
+                     <svg id="icon-{group.Key}" class="w-4 h-4 mr-2 transform transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                     </svg>
+                     <span class="font-medium">{group.Key}</span>
+                     <span class="ml-2 text-sm text-gray-500">({group.Count()} entries)</span>
+                 </div>
+             </button>
+             <div id="group-{group.Key}" class="hidden divide-y expandable-content">
+                 {string.Join("\n", group.Select((log, index) => GenerateLogEntry(log, group.Key.ToString(), index)))}
+             </div>
+         </div>
+         """;
+
+    private static string GenerateLogEntry(LogEntry log, string groupKey, int index) =>
+        $"""
+         <div class="p-4 space-y-2">
+             <div class="inline-block px-2 py-1 rounded-full text-sm {GetLogLevelColor(log.Level)}">
+                 {log.Level}
+             </div>
+             <div class="text-lg">{log.Message}</div>
+             {GenerateExpandableList(log.Data, "Data", $"{groupKey}-{index}-data")}
+             {GenerateExpandableList(log.Files, "Files", $"{groupKey}-{index}-files")}
+             {GenerateExpandableList(log.ReferencedBy, "Referenced By", $"{groupKey}-{index}-refs")}
+             {GenerateHelpLink(log.HelpUrl)}
+         </div>
+         """;
+
+    private static string GenerateHelpLink(string? helpUrl) =>
+        string.IsNullOrEmpty(helpUrl)
+            ? ""
+            : $"""
+               <div class="mt-2">
+                   <a href="{helpUrl}" 
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      class="text-blue-600 hover:text-blue-800 flex items-center text-sm">
+                       Help Documentation
+                       <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>
+                       </svg>
+                   </a>
+               </div>
                """;
-    }
-
-    private static string GenerateLogGroup(IGrouping<MessageLogCode, LogEntry> group)
-    {
-        return $$"""
-                 <div class="border rounded-lg overflow-hidden">
-                     <button
-                         onclick="toggleGroup('{{group.Key}}')"
-                         class="w-full px-4 py-2 bg-gray-50 hover:bg-gray-100 flex items-center justify-between"
-                     >
-                         <div class="flex items-center">
-                             <svg id="icon-{{group.Key}}" class="w-4 h-4 mr-2 transform transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
-                             </svg>
-                             <span class="font-medium">{{group.Key}}</span>
-                             <span class="ml-2 text-sm text-gray-500">({{group.Count()}} entries)</span>
-                         </div>
-                     </button>
-                     <div id="group-{{group.Key}}" class="hidden divide-y expandable-content">
-                         {{string.Join("\n", group.Select((log, index) => GenerateLogEntry(log, group.Key.ToString(), index)))}}
-                     </div>
-                 </div>
-                 """;
-    }
-
-    private static string GenerateLogEntry(LogEntry log, string groupKey, int index)
-    {
-        return $$"""
-                 <div class="p-4 space-y-2">
-                     <div class="inline-block px-2 py-1 rounded-full text-sm {{GetLogLevelColor(log.Level)}}">
-                         {{log.Level}}
-                     </div>
-                     <div class="text-lg">{{log.Message}}</div>
-                     {{GenerateExpandableList(log.Data, "Data", $"{groupKey}-{index}-data")}}
-                     {{GenerateExpandableList(log.Files, "Files", $"{groupKey}-{index}-files")}}
-                     {{GenerateExpandableList(log.ReferencedBy, "Referenced By", $"{groupKey}-{index}-refs")}}
-                     {{GenerateHelpLink(log.HelpUrl)}}
-                 </div>
-                 """;
-    }
-
-    private static string GenerateHelpLink(string? helpUrl)
-    {
-        if (string.IsNullOrEmpty(helpUrl)) return "";
-
-        return $$"""
-                 <div class="mt-2">
-                     <a href="{{helpUrl}}" 
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        class="text-blue-600 hover:text-blue-800 flex items-center text-sm">
-                         Help Documentation
-                         <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>
-                         </svg>
-                     </a>
-                 </div>
-                 """;
-    }
 
     private static string GenerateExpandableList(List<string>? items, string title, string id)
     {
-        if (items == null || !items.Any()) return "";
-
-        return $$"""
-                 <div class="mt-2">
-                     <button
-                         onclick="toggleList('{{id}}')"
-                         class="flex items-center text-sm text-gray-600 hover:text-gray-900"
-                     >
-                         <svg id="icon-list-{{id}}" class="w-4 h-4 transform transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
-                         </svg>
-                         {{title}} ({{items.Count}})
-                     </button>
-                     <div id="list-{{id}}" class="hidden ml-6 mt-1">
-                         {{string.Join("\n", items.Select(item => $"""
-                                                                       <div class="text-sm text-gray-600">{item}</div>
-                                                                   """))}}
-                     </div>
-                 </div>
-                 """;
+        return items is not { Count: not 0 }
+            ? ""
+            : $"""
+               <div class="mt-2">
+                   <button
+                       onclick="toggleList('{id}')"
+                       class="flex items-center text-sm text-gray-600 hover:text-gray-900">
+                       <svg id="icon-list-{id}" class="w-4 h-4 transform transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                       </svg>
+                       {title} ({items.Count})
+                   </button>
+                   <div id="list-{id}" class="hidden ml-6 mt-1">
+                       {string.Join("\n", items.Select(item => $"""
+                                <div class="text-sm text-gray-600">{item}</div>
+                            """))}
+                   </div>
+               </div>
+               """;
     }
 
     private static readonly Dictionary<LogLevel, (string bgClass, string chartColor)> LogLevelColors = new()
@@ -176,7 +166,8 @@ public class LogReportGenerator
             })
             .ToList();
 
-        var reportContent = $"""
+        var reportContent =
+           $"""
             <body class="bg-gray-50">
                 <div class="max-w-6xl mx-auto p-6 space-y-8">
                     <!-- Summary Section -->
