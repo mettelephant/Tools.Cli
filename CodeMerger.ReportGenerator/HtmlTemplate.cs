@@ -8,67 +8,133 @@ public static class HtmlTemplate
     public static string GetReportTemplate()
     {
         return """
-               <!DOCTYPE html>
-               <html lang="en">
-               <head>
-                   <meta charset="UTF-8">
-                   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-                   <title>Comprehensive Operation Report</title>
-                   <style>
-                       body { font-family: Arial, sans-serif; margin: 20px; background-color: #f9f9f9; }
-                       h1 { color: #2c3e50; }
-                       h2 { color: #34495e; }
-                       .summary, .customer-summary { background-color: #fff; padding: 20px; margin-bottom: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-                       .summary p, .customer-summary p { margin: 5px 0; }
-                       .collapsible { background-color: #2980b9; color: white; cursor: pointer; padding: 10px; width: 100%; border: none; text-align: left; outline: none; font-size: 16px; border-radius: 5px; margin-top: 10px; }
-                       .collapsible:after { content: '\25BC'; float: right; }
-                       .collapsible.active:after { content: "\25B2"; }
-                       .content { padding: 0 15px; display: none; background-color: #ecf0f1; overflow: hidden; border-radius: 5px; margin-bottom: 10px; }
-                       .log-entry { padding: 10px; border-bottom: 1px solid #bdc3c7; }
-                       .log-entry:last-child { border-bottom: none; }
-                       .log-info { color: #2980b9; }
-                       .log-warning { color: #e67e22; }
-                       .log-error { color: #c0392b; }
-                       table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-                       th, td { border: 1px solid #bdc3c7; padding: 8px; text-align: left; }
-                       th { background-color: #34495e; color: white; }
-                       a { color: #2980b9; text-decoration: none; }
-                       a:hover { text-decoration: underline; }
-                   </style>
-               </head>
-               <body>
-               
-                   <h1>Comprehensive Operation Report</h1>
-               
-                   <!-- Overall Summary Section -->
-                   <div class="summary">
-                       <h2>Overall Summary</h2>
-                       <p><strong>Total Customers:</strong> {TotalCustomers}</p>
-                       <p><strong>Customers with No Errors:</strong> {CustomersWithNoErrors}</p>
-                       <p><strong>Customers with Errors:</strong> {CustomersWithErrors}</p>
-                   </div>
-               
-                   <!-- Individual Customer Reports -->
-                   {CustomerReports}
-               
-                   <script>
-                       // Collapsible functionality
-                       const coll = document.getElementsByClassName('collapsible');
-                       for (let i = 0; i < coll.length; i++) {
-                           coll[i].addEventListener('click', function() {
-                               this.classList.toggle('active');
-                               const content = this.nextElementSibling;
-                               if (content.style.display === 'block') {
-                                   content.style.display = 'none';
-                               } else {
-                                   content.style.display = 'block';
+               <script>
+                   // Function to calculate log level counts
+                   function calculateLogLevelCounts(logs) {
+                       let counts = { Info: 0, Warning: 0, Error: 0 };
+                       logs.forEach(customer => {
+                           customer.forEach(log => {
+                               if (counts.hasOwnProperty(log.logLevel)) {
+                                   counts[log.logLevel]++;
                                }
                            });
+                       });
+                       return counts;
+                   }
+               
+                   // Function to calculate top 5 log codes
+                   function calculateTopLogCodes(logs) {
+                       let codeCounts = {};
+                       logs.forEach(customer => {
+                           customer.forEach(log => {
+                               if (codeCounts.hasOwnProperty(log.code)) {
+                                   codeCounts[log.code]++;
+                               } else {
+                                   codeCounts[log.code] = 1;
+                               }
+                           });
+                       });
+                       // Sort and get top 5
+                       return Object.entries(codeCounts)
+                           .sort((a, b) => b[1] - a[1])
+                           .slice(0, 5)
+                           .reduce((acc, [code, count]) => {
+                               acc[code] = count;
+                               return acc;
+                           }, {});
+                   }
+               
+                   // Extract all logs
+                   let allLogs = [];
+                   for (let customer in customerLogs) {
+                       if (customerLogs.hasOwnProperty(customer)) {
+                           allLogs = allLogs.concat(customerLogs[customer][0]); // Assuming logs are in the first array
                        }
-                   </script>
-
-               </body>
-               </html>
+                   }
+               
+                   // Calculate counts
+                   let logLevelCounts = calculateLogLevelCounts(customerLogs);
+                   let topLogCodes = calculateTopLogCodes(customerLogs);
+               
+                   // Initialize Log Level Pie Chart
+                   var ctx = document.getElementById('logLevelPieChart').getContext('2d');
+                   var logLevelPieChart = new Chart(ctx, {
+                       type: 'pie',
+                       data: {
+                           labels: ['Info', 'Warning', 'Error'],
+                           datasets: [{
+                               data: [logLevelCounts.Info, logLevelCounts.Warning, logLevelCounts.Error],
+                               backgroundColor: ['#3498db', '#f1c40f', '#e74c3c']
+                           }]
+                       },
+                       options: {
+                           responsive: true
+                       }
+                   });
+               
+                   // Calculate Success and Failure counts per customer
+                   // Assuming 'Successful Operations' and 'Failed Operations' are in columns 3 and 4
+                   let successFailLabels = [];
+                   let successData = [];
+                   let failData = [];
+               
+                   $('#customerTable tbody tr').each(function() {
+                       var data = table.row(this).data();
+                       if (data) {
+                           successFailLabels.push(data[1]); // Customer ID
+                           successData.push(parseInt(data[3]));
+                           failData.push(Math.abs(parseInt(data[4]))); // Assuming failed operations are negative
+                       }
+                   });
+               
+                   // Initialize Successful vs. Failed Operations Bar Chart
+                   var ctx = document.getElementById('successFailBarChart').getContext('2d');
+                   var successFailBarChart = new Chart(ctx, {
+                       type: 'bar',
+                       data: {
+                           labels: successFailLabels,
+                           datasets: [
+                               {
+                                   label: 'Successful Operations',
+                                   data: successData,
+                                   backgroundColor: '#2ecc71'
+                               },
+                               {
+                                   label: 'Failed Operations',
+                                   data: failData,
+                                   backgroundColor: '#e74c3c'
+                               }
+                           ]
+                       },
+                       options: {
+                           responsive: true,
+                           scales: {
+                               y: { beginAtZero: true }
+                           }
+                       }
+                   });
+               
+                   // Initialize Top Log Codes Bar Chart
+                   var ctx = document.getElementById('topLogCodesBarChart').getContext('2d');
+                   var topLogCodesBarChart = new Chart(ctx, {
+                       type: 'bar',
+                       data: {
+                           labels: Object.keys(topLogCodes),
+                           datasets: [{
+                               label: 'Frequency',
+                               data: Object.values(topLogCodes),
+                               backgroundColor: ['#e74c3c', '#f1c40f', '#3498db', '#9b59b6', '#2ecc71']
+                           }]
+                       },
+                       options: {
+                           responsive: true,
+                           scales: {
+                               y: { beginAtZero: true }
+                           }
+                       }
+                   });
+               </script>
+               
                """;
     }
 
