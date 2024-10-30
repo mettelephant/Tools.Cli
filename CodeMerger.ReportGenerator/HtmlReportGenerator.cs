@@ -30,10 +30,10 @@ public static class HtmlReportGenerator
             
             // Serialize log results to JSON
             string logJson = JsonSerializer.Serialize(customer.LogResults, new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase });
-            logJson = logJson.Replace("\\", "\\\\").Replace("\"", "\\\"");
+            //logJson = logJson.Replace("\\", "\\\\").Replace("\"", "\\\"");
             
             // Add to logDataBuilder
-            logDataBuilder.AppendLine($"    '{customer.CustomerId}': [{logJson}],");
+            logDataBuilder.AppendLine($"""    "{customer.CustomerId}": {logJson},""");
             
             // Add to tableRowsBuilder
             tableRowsBuilder.Append($@"
@@ -46,15 +46,15 @@ public static class HtmlReportGenerator
                     <td>{customer.Summary.Warnings}</td>
                     <td>{errorCount}</td>
                     <td>{logCodes}</td>
-                </tr>
-                <tr class='child-row' style='display: none;'>
+                </tr>"
+                /*<tr class='child-row' style='display: none;'>
                     <td colspan='8'>
                         <div class='child-row-content'>
                             <!-- Log details will be injected here via JavaScript -->
                         </div>
                     </td>
                 </tr>
-            ");
+            "*/);
         }
 
         logDataBuilder.AppendLine("};");
