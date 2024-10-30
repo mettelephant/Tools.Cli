@@ -1,7 +1,7 @@
 ﻿using System.Text.Json;
 using Bogus;
 
-var html = LogReportGenerator.GenerateReport();
+var html = LogReportGenerator.GenerateReport(new CodeMergerSummary("JOY", "v5.9.18.2", "joybeta", 200, 153, 30, 17));
 await File.WriteAllTextAsync("log-report.html", html);
 
 public record CodeMergerSummary(string CustomerCode, string AssemblyVersion, string SubDomain, int FilesDetected, int FilesProcessed, int FilesIgnored, int FilesProcessedWithErrors);
@@ -63,54 +63,6 @@ public class LogReportGenerator
                    </style>
                </head>
                """;
-    }
-
-    private static string GetHtmlFooter(List<object> logLevelStats)
-    {
-        return $$"""
-                 <script>
-                     const ctx = document.getElementById('logLevelChart').getContext('2d');
-                     new Chart(ctx, {
-                         type: 'bar',
-                         data: {
-                             labels: {{JsonSerializer.Serialize(logLevelStats.Select(x => x.GetType().GetProperty("level").GetValue(x)))}},
-                             datasets: [{
-                                 label: 'Number of Logs',
-                                 data: {{JsonSerializer.Serialize(logLevelStats.Select(x => x.GetType().GetProperty("count").GetValue(x)))}},
-                                 backgroundColor: '#4F46E5'
-                             }]
-                         },
-                         options: {
-                             responsive: true,
-                             maintainAspectRatio: false,
-                             scales: {
-                                 y: {
-                                     beginAtZero: true,
-                                     ticks: {
-                                         stepSize: 1
-                                     }
-                                 }
-                             }
-                         }
-                     });
-                 
-                     function toggleGroup(groupId) {
-                         const content = document.getElementById(`group-${groupId}`);
-                         const icon = document.getElementById(`icon-${groupId}`);
-                         content.classList.toggle('hidden');
-                         icon.style.transform = content.classList.contains('hidden') ? 'rotate(0deg)' : 'rotate(90deg)';
-                     }
-                 
-                     function toggleList(listId) {
-                         const content = document.getElementById(`list-${listId}`);
-                         const icon = document.getElementById(`icon-list-${listId}`);
-                         content.classList.toggle('hidden');
-                         icon.style.transform = content.classList.contains('hidden') ? 'rotate(0deg)' : 'rotate(90deg)';
-                     }
-                 </script>
-                 </body>
-                 </html>
-                 """;
     }
 
     private static string GenerateLogGroup(IGrouping<MessageLogCode, LogEntry> group)
@@ -195,49 +147,146 @@ public class LogReportGenerator
                  """;
     }
 
-    private static string GetLogLevelColor(LogLevel level)
+    private static readonly Dictionary<LogLevel, (string bgClass, string chartColor)> LogLevelColors = new()
     {
-        return level switch
-        {
-            LogLevel.Debug => "bg-gray-200",
-            LogLevel.Information => "bg-blue-200",
-            LogLevel.Summary => "bg-green-200",
-            LogLevel.Warning => "bg-yellow-200",
-            _ => "bg-gray-200"
-        };
-    }
+        { LogLevel.Debug, ("bg-gray-200", "rgba(229, 231, 235, 0.8)") },
+        { LogLevel.Information, ("bg-blue-200", "rgba(186, 230, 253, 0.8)") },
+        { LogLevel.Summary, ("bg-green-200", "rgba(187, 247, 208, 0.8)") },
+        { LogLevel.Warning, ("bg-red-200", "rgba(254, 202, 202, 0.8)") }
+    };
 
-    public static string GenerateReport()
+    private static string GetLogLevelColor(LogLevel level) => 
+        LogLevelColors.TryGetValue(level, out var colors) ? colors.bgClass : "bg-gray-200";
+
+    record LogLevelStat(string Level, int Count);
+    public static string GenerateReport(CodeMergerSummary summary)
     {
         var logs = GenerateSampleLogs();
         var groupedLogs = logs.GroupBy(l => l.MessageLogCode);
-
+        
         var logLevelStats = logs.GroupBy(l => l.Level)
-            .Select(g => new { level = g.Key.ToString(), count = g.Count() })
-            .ToList<object>();
+                               .Select(g => new LogLevelStat(g.Key.ToString(), g.Count()))
+                               .ToList();
+        
+        // Get colors in the same order as the stats
+        var chartColors = logLevelStats
+            .Select(x => {
+                var level = Enum.Parse<LogLevel>(x.Level);
+                return LogLevelColors.TryGetValue(level, out var colors) ? colors.chartColor : LogLevelColors[LogLevel.Debug].chartColor;
+            })
+            .ToList();
 
-        var reportContent = $$"""
-                              <body class="bg-gray-50">
-                                  <div class="max-w-6xl mx-auto p-6 space-y-8">
-                                      <div class="bg-white rounded-lg shadow-lg p-6">
-                                          <h1 class="text-2xl font-bold mb-6">Log Report</h1>
-                                          
-                                          <div class="mb-8">
-                                              <h2 class="text-xl font-semibold mb-4">Log Level Distribution</h2>
-                                              <div class="chart-container">
-                                                  <canvas id="logLevelChart"></canvas>
-                                              </div>
-                                          </div>
-                              
-                                          <div class="space-y-4">
-                                              {{string.Join("\n", groupedLogs.Select(GenerateLogGroup))}}
-                                          </div>
-                                      </div>
-                                  </div>
-                              """;
+        var reportContent = $"""
+            <body class="bg-gray-50">
+                <div class="max-w-6xl mx-auto p-6 space-y-8">
+                    <!-- Summary Section -->
+                    <div class="bg-white rounded-lg shadow-lg p-6">
+                        <div class="flex items-center justify-between mb-6">
+                            <div>
+                                <h1 class="text-3xl font-bold text-gray-800">{summary.CustomerCode}</h1>
+                                <p class="text-lg text-gray-600">{summary.SubDomain}</p>
+                            </div>
+                            <div class="text-right">
+                                <span class="text-sm text-gray-500">Assembly Version</span>
+                                <p class="text-lg font-mono font-medium">{summary.AssemblyVersion}</p>
+                            </div>
+                        </div>
 
-        return GetHtmlHeader() + reportContent + GetHtmlFooter(logLevelStats);
+                        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                            <div class="bg-blue-50 rounded-lg p-4">
+                                <div class="text-blue-800 text-sm font-medium">Files Detected</div>
+                                <div class="text-2xl font-bold text-blue-900">{summary.FilesDetected}</div>
+                            </div>
+                            <div class="bg-green-50 rounded-lg p-4">
+                                <div class="text-green-800 text-sm font-medium">Files Processed</div>
+                                <div class="text-2xl font-bold text-green-900">{summary.FilesProcessed}</div>
+                            </div>
+                            <div class="bg-yellow-50 rounded-lg p-4">
+                                <div class="text-yellow-800 text-sm font-medium">Files Ignored</div>
+                                <div class="text-2xl font-bold text-yellow-900">{summary.FilesIgnored}</div>
+                            </div>
+                            <div class="bg-red-50 rounded-lg p-4">
+                                <div class="text-red-800 text-sm font-medium">Processing Errors</div>
+                                <div class="text-2xl font-bold text-red-900">{summary.FilesProcessedWithErrors}</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Log Analysis Section -->
+                    <div class="bg-white rounded-lg shadow-lg p-6">
+                        <h2 class="text-xl font-semibold mb-4">Log Level Distribution</h2>
+                        <div class="chart-container">
+                            <canvas id="logLevelChart"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Logs Section -->
+                    <div class="bg-white rounded-lg shadow-lg p-6">
+                        <h2 class="text-xl font-semibold mb-4">Detailed Logs</h2>
+                        <div class="space-y-4">
+                            {string.Join("\n", groupedLogs.Select(GenerateLogGroup))}
+                        </div>
+                    </div>
+                </div>
+            """;
+
+        return GetHtmlHeader() + reportContent + GetUpdatedHtmlFooter(logLevelStats, chartColors);
     }
+    private static string GetUpdatedHtmlFooter(List<LogLevelStat> logLevelStats, List<string> chartColors) => $$"""
+          <script>
+              const ctx = document.getElementById('logLevelChart').getContext('2d');
+              new Chart(ctx, {
+                  type: 'bar',
+                  data: {
+                      labels: {{JsonSerializer.Serialize(logLevelStats.Select(x => x.Level))}},
+                      datasets: [{
+                          label: 'Number of Logs',
+                          data: {{JsonSerializer.Serialize(logLevelStats.Select(x => x.Count))}},
+                          backgroundColor: {{JsonSerializer.Serialize(chartColors)}}
+                      }]
+                  },
+                  options: {
+                      responsive: true,
+                      maintainAspectRatio: false,
+                      plugins: {
+                          legend: {
+                              display: false
+                          }
+                      },
+                      scales: {
+                          y: {
+                              beginAtZero: true,
+                              ticks: {
+                                  stepSize: 1
+                              }
+                          }
+                      }
+                  }
+              });
+          
+              // Toggle group visibility
+              function toggleGroup(groupId) {
+                  const content = document.getElementById(`group-${groupId}`);
+                  const icon = document.getElementById(`icon-${groupId}`);
+                  if (content && icon) {
+                      content.classList.toggle('hidden');
+                      icon.style.transform = content.classList.contains('hidden') ? 'rotate(0deg)' : 'rotate(90deg)';
+                  }
+              }
+          
+              // Toggle list visibility
+              function toggleList(listId) {
+                  const content = document.getElementById(`list-${listId}`);
+                  const icon = document.getElementById(`icon-list-${listId}`);
+                  if (content && icon) {
+                      content.classList.toggle('hidden');
+                      icon.style.transform = content.classList.contains('hidden') ? 'rotate(0deg)' : 'rotate(90deg)';
+                  }
+              }
+          </script>
+          </body>
+          </html>
+          """;
 
     private static List<LogEntry> GenerateSampleLogs()
     {
