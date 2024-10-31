@@ -1,8 +1,17 @@
 ﻿using System.Text.Json;
 using Bogus;
+using Tools.Gen2;
 
-var html = LogReportGenerator.GenerateReport(new CodeMergerSummary("JOY", "v5.9.18.2", "joybeta", 200, 153, 30, 17));
+
+var logs = LogReportGenerator.GenerateSampleLogs();
+var summary = new CodeMergerSummary("JOY", "v5.9.18.2", "joybeta", 200, 153, 30, 17);
+var html = LogReportGenerator.GenerateReport(summary, logs);
 await File.WriteAllTextAsync("log-report.html", html);
+
+await MultiCustomerReportGenerator.GenerateConsolidatedReport(
+    baseDirectory: "logs/2024-10-30",
+    outputDirectory: "output/consolidated-report"
+);
 
 public record CodeMergerSummary(string CustomerCode, string AssemblyVersion, string SubDomain, int FilesDetected, int FilesProcessed, int FilesIgnored, int FilesProcessedWithErrors);
 
@@ -149,9 +158,8 @@ public class LogReportGenerator
         LogLevelColors.TryGetValue(level, out var colors) ? colors.bgClass : "bg-gray-200";
 
     record LogLevelStat(string Level, int Count);
-    public static string GenerateReport(CodeMergerSummary summary)
+    public static string GenerateReport(CodeMergerSummary summary, List<LogEntry> logs)
     {
-        var logs = GenerateSampleLogs();
         var groupedLogs = logs.GroupBy(l => l.MessageLogCode);
         
         var logLevelStats = logs.GroupBy(l => l.Level)
@@ -279,7 +287,7 @@ public class LogReportGenerator
           </html>
           """;
 
-    private static List<LogEntry> GenerateSampleLogs()
+    public static List<LogEntry> GenerateSampleLogs()
     {
         // Set a constant seed for reproducible test data
         Randomizer.Seed = new Random(8675309);
